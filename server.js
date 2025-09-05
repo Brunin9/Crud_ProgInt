@@ -1,18 +1,26 @@
 import express from "express";
-import bodyParser from "body-parser";
+import path from "path";
+import { fileURLToPath } from "url";
 import alunosRoutes from "./rotas/alunos.js";
-import logMiddleware from "./middleware/log.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 3000;
 
-app.use(bodyParser.json());
-app.use(logMiddleware);
+// Middleware para receber JSON
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-app.use("/alunos", alunosRoutes);
+// Middleware personalizado
+import logger from "./middleware/logger.js";
+app.use(logger);
 
-app.use(express.static("Public"));
+// Rotas da API
+app.use("/api/alunos", alunosRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Rodando em http://localhost:${PORT}`);
-});
+// Servir arquivos estáticos do front-end
+app.use(express.static(path.join(__dirname, "public")));
+
+app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));
