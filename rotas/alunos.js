@@ -2,15 +2,15 @@ import express from "express";
 
 const router = express.Router();
 
-// Lista em memória (pode ser substituída por banco depois)
+//lista em memória (pode ser substituída por banco depois)
 let alunos = [];
 
-// 📍 GET - listar todos os alunos
+//GET - listar todos os alunos
 router.get("/", (req, res) => {
   res.json(alunos);
 });
 
-// 📍 POST - cadastrar novo aluno
+//POST - cadastrar novo aluno
 router.post("/", (req, res) => {
   const { nome, cpf, telefone, email, matricula } = req.body;
 
@@ -29,10 +29,10 @@ router.post("/", (req, res) => {
 
   alunos.push(novoAluno);
 
-  res.status(201).json(novoAluno); // 👈 devolve o aluno criado
+  res.status(201).json(novoAluno); //devolve o aluno criado
 });
 
-// 📍 PUT - editar aluno
+//PUT - editar aluno
 router.put("/:id", (req, res) => {
   const { id } = req.params;
   const { nome, cpf, telefone, email, matricula } = req.body;
@@ -47,7 +47,7 @@ router.put("/:id", (req, res) => {
   res.json(alunos[index]);
 });
 
-// 📍 DELETE - excluir aluno
+//DELETE - excluir aluno
 router.delete("/:id", (req, res) => {
   const { id } = req.params;
 

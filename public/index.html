@@ -1,147 +1,77 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRUD Alunos</title>
-    <style>
-        body { font-family: Arial; padding: 20px; background: #f0f0f0; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
-        input { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 8px 16px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
-        .btn-primary { background: #007bff; color: white; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-danger { background: #dc3545; color: white; }
-        .btn-secondary { background: #6c757d; color: white; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background: #f8f9fa; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="container">
         <h1>Cadastro de Alunos</h1>
         
+        <!-- tabela de cadastro de alunos -->
         <form id="form">
+            <!-- campo escondido pra guardar o ID quando editando um aluno -->
             <input type="hidden" id="id">
             <div class="form-grid">
+                <!-- campo pra o nome do aluno -->
                 <input type="text" id="nome" placeholder="Nome" required>
+                
+                <!-- campo para o CPF (obrigatório) -->
                 <input type="text" id="cpf" placeholder="CPF" required>
+                
+                <!-- campo para o telefone -->
                 <input type="text" id="telefone" placeholder="Telefone" required>
+                
+                <!-- campo para email com validação automática do HTML5 -->
                 <input type="email" id="email" placeholder="Email" required>
+                
+                <!-- campo para número de matrícula -->
                 <input type="text" id="matricula" placeholder="Matrícula" required>
+                
+                <!-- campo para nome da escola -->
                 <input type="text" id="escola" placeholder="Escola" required>
             </div>
-            <button type="submit" class="btn-primary">Salvar</button>
-            <button type="button" id="cancelar" class="btn-secondary" style="display:none">Cancelar</button>
+            
+            <!-- Seção dos botões do formulário -->
+            <div class="form-buttons">
+                <!-- botão principal para salvar -->
+                <button type="submit" class="btn-primary">Salvar</button>
+                
+                <!-- botão para cancelar edição-->
+                <button type="button" id="cancelar" class="btn-secondary">Cancelar</button>
+            </div>
         </form>
-        
+
+        <!-- subtítulo pra outra secao -->
         <h2>Lista de Alunos</h2>
+        
+        <!-- tabela para mostrar os dados dos alunos cadastrados -->
         <table>
             <thead>
                 <tr>
+                    <!-- colunas-->
                     <th>Nome</th>
                     <th>CPF</th>
                     <th>Telefone</th>
                     <th>Email</th>
                     <th>Matrícula</th>
                     <th>Escola</th>
-                    <th>Ações</th>
+                    <th>Ações</th> <!-- coluna onde vai ficar os botões de editar/deletar -->
                 </tr>
             </thead>
-            <tbody id="tabela"></tbody>
+            
+            <!-- corpo da tabela onde os dados serão colocados usando o script -->
+            <tbody id="tabela">
+            </tbody>
         </table>
     </div>
-
-    <script>
-        let editando = null;
-        const form = document.getElementById('form');
-        const tabela = document.getElementById('tabela');
-        const cancelar = document.getElementById('cancelar');
-
-        async function carregar() {
-            const res = await fetch('/api/alunos');
-            const alunos = await res.json();
-            
-            tabela.innerHTML = alunos.map(a => `
-                <tr>
-                    <td>${a.nome}</td>
-                    <td>${a.cpf}</td>
-                    <td>${a.telefone}</td>
-                    <td>${a.email}</td>
-                    <td>${a.matricula}</td>
-                    <td>${a.escola}</td>
-                    <td>
-                        <button class="btn-success" onclick="editar(${a.id})">Editar</button>
-                        <button class="btn-danger" onclick="deletar(${a.id})">Deletar</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        form.onsubmit = async (e) => {
-            e.preventDefault();
-            
-            const dados = {
-                nome: document.getElementById('nome').value,
-                cpf: document.getElementById('cpf').value,
-                telefone: document.getElementById('telefone').value,
-                email: document.getElementById('email').value,
-                matricula: document.getElementById('matricula').value,
-                escola: document.getElementById('escola').value
-            };
-
-            if (editando) {
-                await fetch(`/api/alunos/${editando}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dados)
-                });
-            } else {
-                await fetch('/api/alunos', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dados)
-                });
-            }
-
-            form.reset();
-            editando = null;
-            cancelar.style.display = 'none';
-            carregar();
-        };
-
-        async function editar(id) {
-            const res = await fetch(`/api/alunos/${id}`);
-            const aluno = await res.json();
-            
-            document.getElementById('id').value = aluno.id;
-            document.getElementById('nome').value = aluno.nome;
-            document.getElementById('cpf').value = aluno.cpf;
-            document.getElementById('telefone').value = aluno.telefone;
-            document.getElementById('email').value = aluno.email;
-            document.getElementById('matricula').value = aluno.matricula;
-            document.getElementById('escola').value = aluno.escola;
-            
-            editando = id;
-            cancelar.style.display = 'inline';
-        }
-
-        async function deletar(id) {
-            if (confirm('Deletar aluno?')) {
-                await fetch(`/api/alunos/${id}`, { method: 'DELETE' });
-                carregar();
-            }
-        }
-
-        cancelar.onclick = () => {
-            form.reset();
-            editando = null;
-            cancelar.style.display = 'none';
-        };
-
-        carregar();
-    </script>
+    
+    <!-- link para o arquivo js-->
+    <script src="script.js"></script>
+    
 </body>
 </html>
