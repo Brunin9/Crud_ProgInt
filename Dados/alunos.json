@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "id": 1757279821213,
+    "nome": "bruno",
+    "cpf": "123",
+    "telefone": "123",
+    "email": "jose@gmail.com",
+    "matricula": "123",
+    "escola": "ifpr"
+  }
+]

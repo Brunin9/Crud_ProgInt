@@ -1,79 +1,159 @@
-const form = document.getElementById("formAluno");
-const tabela = document.querySelector("#tabelaAlunos tbody");
+let alunoEditandoId = null; // controla se estamos editando alguém
 
-let alunos = JSON.parse(localStorage.getItem("alunos")) || [];
+// =========================
+// Função para renderizar um aluno na tabela
+// =========================
+function adicionarAlunoNaLista(aluno) {
+  const lista = document.getElementById("lista-alunos");
 
-// Atualiza a tabela
-function atualizarTabela() {
-    tabela.innerHTML = "";
-    alunos.forEach(a => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${a.nome}</td>
-            <td>${a.cpf}</td>
-            <td>${a.telefone}</td>
-            <td>${a.email}</td>
-            <td>${a.matricula}</td>
-            <td>${a.aluno}</td>
-            <td>${a.escola}</td>
-            <td>
-                <button onclick="editar(${a.id})">Editar</button>
-                <button onclick="deletar(${a.id})">Excluir</button>
-            </td>
-        `;
-        tabela.appendChild(tr);
-    });
+  const tr = document.createElement("tr");
+  tr.setAttribute("data-id", aluno.id);
+
+  tr.innerHTML = `
+        <td>${aluno.nome}</td>
+        <td>${aluno.cpf}</td>
+        <td>${aluno.telefone}</td>
+        <td>${aluno.email}</td>
+        <td>${aluno.matricula}</td>
+        <td>
+            <button onclick="editarAluno(${aluno.id})">Editar</button>
+            <button onclick="deletarAluno(${aluno.id}, this)">Excluir</button>
+        </td>
+    `;
+
+  lista.appendChild(tr);
 }
 
-// Salvar ou editar aluno
-form.addEventListener("submit", e => {
-    e.preventDefault();
-
-    const id = document.getElementById("id").value;
-    const aluno = {
-        id: id ? Number(id) : Date.now(),
-        nome: document.getElementById("nome").value,
-        cpf: document.getElementById("cpf").value,
-        telefone: document.getElementById("telefone").value,
-        email: document.getElementById("email").value,
-        matricula: document.getElementById("matricula").value,
-        aluno: document.getElementById("aluno").value,
-        escola: document.getElementById("escola").value
-    };
-
-    if (id) {
-        alunos = alunos.map(a => a.id === aluno.id ? aluno : a);
+// =========================
+// Carregar alunos ao abrir a página
+// =========================
+async function carregarAlunos() {
+  try {
+    const response = await fetch("http://localhost:3000/alunos");
+    if (response.ok) {
+      const dados = await response.json();
+      document.getElementById("lista-alunos").innerHTML = ""; // limpa tabela
+      dados.forEach((aluno) => adicionarAlunoNaLista(aluno));
     } else {
-        alunos.push(aluno);
+      console.error("Erro ao carregar alunos");
     }
+  } catch (error) {
+    console.error("Erro:", error);
+  }
+}
 
-    localStorage.setItem("alunos", JSON.stringify(alunos));
-    form.reset();
-    document.getElementById("id").value = "";
-    atualizarTabela();
+// =========================
+// Submeter formulário (cadastrar ou editar)
+// =========================
+document.getElementById("form-aluno").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const aluno = {
+    nome: document.getElementById("nome").value,
+    cpf: document.getElementById("cpf").value,
+    telefone: document.getElementById("telefone").value,
+    email: document.getElementById("email").value,
+    matricula: document.getElementById("matricula").value,
+  };
+
+  if (alunoEditandoId) {
+    // === Edição ===
+    try {
+      const response = await fetch(`http://localhost:3000/alunos/${alunoEditandoId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(aluno),
+      });
+
+      if (response.ok) {
+        const atualizado = await response.json();
+
+        // Atualiza linha na tabela
+        const tr = document.querySelector(`tr[data-id='${alunoEditandoId}']`);
+        tr.innerHTML = `
+            <td>${atualizado.nome}</td>
+            <td>${atualizado.cpf}</td>
+            <td>${atualizado.telefone}</td>
+            <td>${atualizado.email}</td>
+            <td>${atualizado.matricula}</td>
+            <td>
+                <button onclick="editarAluno(${atualizado.id})">Editar</button>
+                <button onclick="deletarAluno(${atualizado.id}, this)">Excluir</button>
+            </td>
+        `;
+
+        // Reseta formulário
+        e.target.reset();
+        alunoEditandoId = null;
+        document.querySelector("#form-aluno button").textContent = "Cadastrar";
+      } else {
+        alert("Erro ao atualizar aluno");
+      }
+    } catch (error) {
+      console.error("Erro:", error);
+    }
+  } else {
+    // === Cadastro normal ===
+    try {
+      const response = await fetch("http://localhost:3000/alunos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(aluno),
+      });
+
+      if (response.ok) {
+        const novoAluno = await response.json();
+        adicionarAlunoNaLista(novoAluno); // 👈 insere direto na tabela
+        e.target.reset(); // limpa formulário
+      } else {
+        alert("Erro ao cadastrar aluno");
+      }
+    } catch (error) {
+      console.error("Erro:", error);
+    }
+  }
 });
 
-// Editar aluno
-window.editar = (id) => {
-    const aluno = alunos.find(a => a.id === id);
-    document.getElementById("id").value = aluno.id;
-    document.getElementById("nome").value = aluno.nome;
-    document.getElementById("cpf").value = aluno.cpf;
-    document.getElementById("telefone").value = aluno.telefone;
-    document.getElementById("email").value = aluno.email;
-    document.getElementById("matricula").value = aluno.matricula;
-    document.getElementById("aluno").value = aluno.aluno;
-    document.getElementById("escola").value = aluno.escola;
-};
-
+// =========================
 // Excluir aluno
-window.deletar = (id) => {
-    if (confirm("Deseja realmente excluir este aluno?")) {
-        alunos = alunos.filter(a => a.id !== id);
-        localStorage.setItem("alunos", JSON.stringify(alunos));
-        atualizarTabela();
-    }
-};
+// =========================
+async function deletarAluno(id, botao) {
+  if (!confirm("Deseja realmente excluir este aluno?")) return;
 
-// Inicializa tabela
-atualizarTabela();
+  try {
+    const response = await fetch(`http://localhost:3000/alunos/${id}`, {
+      method: "DELETE",
+    });
+
+    if (response.ok) {
+      const linha = botao.closest("tr");
+      linha.remove();
+    } else {
+      alert("Erro ao excluir aluno");
+    }
+  } catch (error) {
+    console.error("Erro:", error);
+  }
+}
+
+// =========================
+// Editar aluno
+// =========================
+function editarAluno(id) {
+  const tr = document.querySelector(`tr[data-id='${id}']`);
+  const tds = tr.querySelectorAll("td");
+
+  document.getElementById("nome").value = tds[0].textContent;
+  document.getElementById("cpf").value = tds[1].textContent;
+  document.getElementById("telefone").value = tds[2].textContent;
+  document.getElementById("email").value = tds[3].textContent;
+  document.getElementById("matricula").value = tds[4].textContent;
+
+  alunoEditandoId = id; // 👈 sinaliza que é edição
+  document.querySelector("#form-aluno button").textContent = "Salvar Alterações";
+}
+
+// =========================
+// Chamar ao carregar a página
+// =========================
+window.onload = carregarAlunos;
